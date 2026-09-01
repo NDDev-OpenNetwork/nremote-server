@@ -35,6 +35,19 @@ are meant to stay readable against each other.
 Upstream changes to that directory are merged by hand. There is no gitlink to
 bump.
 
+## No outbound calls
+
+This server talks to its own clients and to nothing else. There is no update
+check, no usage report, no fingerprint, and no third-party endpoint compiled in
+anywhere -- verified by running the containers and observing zero outbound
+connections, and by reading `strings` over the shipped binaries. `TEST_HBBS`
+probes the server's own listener and defaults to it; `nremote-utils doctor`
+contacts an address the operator types.
+
+Adding a call to any host this operator did not configure is a change in what
+the product is, not a feature. If one is ever genuinely needed, it is opt-in,
+logged, and written into NOTICE.
+
 ## Rust rules
 
 - No new `unwrap()` or `expect()` outside tests and lock acquisition.

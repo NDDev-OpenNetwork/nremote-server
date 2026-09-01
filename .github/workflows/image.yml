@@ -1,0 +1,85 @@
+name: image
+
+# The container image is the deliverable. There are no standalone binary
+# artifacts: an artifact this repository does not build and test is an artifact
+# whose provenance nobody can state, and one supported deployment shape that
+# actually works beats three that are asserted.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tags: ${{ steps.plan.outputs.tags }}
+      push: ${{ steps.plan.outputs.push }}
+      cache: ${{ steps.plan.outputs.cache }}
+    steps:
+      - name: Decide what this event publishes
+        id: plan
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          short="${SHA:0:12}"
+          if [ "$REF_TYPE" = "tag" ]; then
+            # A tag is the only thing that moves :latest. A push to main does
+            # not, because main is where work lands, not where it is blessed.
+            tags="$REF_NAME,latest,sha-$short"
+            push=true
+          elif [ "$EVENT" = "push" ] || [ "$EVENT" = "workflow_dispatch" ]; then
+            tags="main,sha-$short"
+            push=true
+          else
+            tags="pr-${{ github.event.number }}"
+            push=false
+          fi
+          # The registry layer cache is written with the same credential that
+          # pushes, so a pull request -- which has none, and from a fork could
+          # not be trusted with one -- uses the Actions cache instead.
+          if [ "$push" = "true" ]; then cache=registry; else cache=gha; fi
+          {
+            printf 'tags=%s\n' "$tags"
+            printf 'push=%s\n' "$push"
+            printf 'cache=%s\n' "$cache"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build
+    needs: plan
+    permissions:
+      contents: read
+      packages: write # ghcr.io push and the registry layer cache
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docker-build.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      image: ghcr.io/nddev-opennetwork/nremote-server
+      tags: ${{ needs.plan.outputs.tags }}
+      push: ${{ needs.plan.outputs.push == 'true' }}
+      cache: ${{ needs.plan.outputs.cache }}
+      # amd64 only, and stated rather than implied: arm64 would need QEMU and
+      # roughly triples a release build that already links with LTO and one
+      # codegen unit. Add it when a host needs it, with the build time measured
+      # rather than hoped for.
+      platforms: linux/amd64
+      # A cold release build of this tree takes tens of minutes on two cores.
+      timeout_minutes: 90

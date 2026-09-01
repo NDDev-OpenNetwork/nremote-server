@@ -1,0 +1,75 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # A run must be requestable without changing the code. GitHub has dropped
+  # push events before, and the only other way to ask for proof on a commit
+  # that already merged is to push an empty one.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: rust
+    permissions:
+      contents: read
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-ci.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      # Two, not three. Windows is absent because nothing here is built for it:
+      # the deliverable is a Linux container, and macOS is kept because it is
+      # the only platform where native-tls resolves to Security.framework
+      # instead of OpenSSL, which is a real second code path rather than a
+      # second copy of the first.
+      test_matrix_os: '["ubuntu-latest", "macos-latest"]'
+      build_command: 'cargo build --locked --all-targets'
+      test_command: 'cargo test --locked --all-targets'
+      # rustfmt resolves `mod version`, and src/version.rs is written by
+      # build.rs at compile time and is not tracked. On a fresh checkout that
+      # makes `cargo fmt` fail before it formats anything -- not a formatting
+      # failure, a missing-file error that reads like one. The fmt job runs on
+      # its own runner with no build behind it, so it writes the stub itself
+      # rather than paying for a full `cargo check` to produce one line.
+      fmt_command: >-
+        printf 'pub const VERSION: &str = "0.0.0";\n' > src/version.rs &&
+        cargo fmt --all --check
+      clippy_command: 'cargo clippy --locked --all-targets -- -D warnings'
+
+  supply-chain:
+    name: supply-chain
+    permissions:
+      contents: read
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-supply-chain.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      enable_audit: true
+      # cargo-deny and cargo-machete are off deliberately, not by omission.
+      # This tree carries a vendored library with client-side modules the
+      # server never calls, so machete reports them as unused and would be
+      # wrong; deny needs a reviewed deny.toml, and shipping one that allows
+      # everything would be a check that proves nothing. Both are open work,
+      # tracked in AGENTS.md rather than pretended to here.
+      enable_deny: false
+      enable_machete: false
+
+  actionlint:
+    name: actionlint
+    permissions:
+      contents: read
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+
+  pr-hygiene:
+    name: pr-hygiene
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      issues: write # the stale bot closes threads
+      pull-requests: write # the labeler applies labels
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/pr-hygiene.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243

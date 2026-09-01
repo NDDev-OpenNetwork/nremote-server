@@ -36,6 +36,15 @@ Modified by NDDev beginning 2026-09-02. Changes so far:
   * The compiled-in default rendezvous server and its public key are cleared.
     A self-hosted build must not carry somebody else's address as a fallback.
 
+  * Eleven declared dependencies with no caller are removed, among them
+    `machine-uid`, `mac_address` and `whoami`, together with `fingerprint.rs`
+    and the `sysinfo` fork it needed. That module identified the machine it ran
+    on and existed to feed the callback above. There is now no code in this
+    tree that identifies the host to anybody.
+
+  * Two discarded write counts on the loopback consoles are fixed, and the tree
+    is made clean under `cargo clippy -- -D warnings` and `cargo fmt`.
+
   * Deployment surfaces that this repository does not build or test are
     removed: the Debian and FreeBSD packaging, the systemd units, the
     Kubernetes example, the legacy Tauri administration GUI and the two
