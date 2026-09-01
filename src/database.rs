@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use hbb_common::{log, ResultType};
 use sqlx::{
     sqlite::SqliteConnectOptions, ConnectOptions, Connection, Error as SqlxError, SqliteConnection,
@@ -13,19 +12,23 @@ pub struct DbPool {
     url: String,
 }
 
-#[async_trait]
+// deadpool 0.12 dropped async-trait in favour of native async fn in traits and
+// added a Metrics argument to recycle, which this pool has no use for.
 impl deadpool::managed::Manager for DbPool {
     type Type = SqliteConnection;
     type Error = SqlxError;
+
     async fn create(&self) -> Result<SqliteConnection, SqlxError> {
         let opt = SqliteConnectOptions::from_str(&self.url)
             .unwrap()
             .log_statements(log::LevelFilter::Debug);
         SqliteConnection::connect_with(&opt).await
     }
+
     async fn recycle(
         &self,
         obj: &mut SqliteConnection,
+        _metrics: &deadpool::managed::Metrics,
     ) -> deadpool::managed::RecycleResult<SqlxError> {
         Ok(obj.ping().await?)
     }
@@ -61,12 +64,11 @@ impl Database {
             .parse()
             .unwrap_or(1);
         log::debug!("MAX_DATABASE_CONNECTIONS={}", n);
-        let pool = Pool::new(
-            DbPool {
-                url: url.to_owned(),
-            },
-            n,
-        );
+        let pool = Pool::builder(DbPool {
+            url: url.to_owned(),
+        })
+        .max_size(n)
+        .build()?;
         let _ = pool.get().await?; // test
         let db = Database { pool };
         db.create_tables().await?;

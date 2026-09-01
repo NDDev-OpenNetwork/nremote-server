@@ -44,7 +44,6 @@ pub use libc;
 pub mod keyboard;
 pub use base64;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
-pub use dlopen;
 pub use flexi_logger;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub use machine_uid;

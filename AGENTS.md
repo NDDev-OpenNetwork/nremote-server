@@ -56,6 +56,23 @@ logged, and written into NOTICE.
 - `cargo build --locked`. A build that resolves its own versions is not the
   build that was tested.
 
+## Open work, named rather than implied
+
+Two dependency migrations are declared in `osv-scanner.toml` with an expiry
+date rather than done. Both are real work; neither is a version bump.
+
+- **clap 2 to clap 4.** clap 2 pins `ansi_term` and `atty`, both unmaintained.
+  `args_from_usage` is gone in clap 3+, and `init_args` iterates
+  `matches.args` to turn every parsed flag into an environment variable, which
+  has no direct equivalent. Porting changes the CLI contract of a running
+  server, so it needs its own change with its own evidence.
+- **sodiumoxide to a maintained ed25519.** This is the signing every client
+  authenticates against. A migration needs a compatibility test against an
+  existing key pair before it can be believed, not a green build.
+
+Neither has a known vulnerability. Both are held to 2026-12-01, after which the
+scan goes red and the decision has to be made again rather than inherited.
+
 ## Verification
 
 ```bash
