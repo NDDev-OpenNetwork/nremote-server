@@ -1,0 +1,58 @@
+nremote-server
+Copyright (C) 2026 NDDev
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See LICENSE for the full text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+--------------------------------------------------------------------------
+
+Attribution and modification notice, as required by sections 4 and 5 of the
+GNU Affero General Public License version 3.
+
+This is a modified version of the RustDesk Server program, Copyright (C)
+Purslane Ltd. and the RustDesk contributors, distributed under the same
+licence. This file exists to satisfy the licence and is the only place the
+prior work is named; the product, its binaries and its documentation are
+nremote.
+
+Modified by NDDev beginning 2026-09-02. Changes so far:
+
+  * The shared protocol library under libs/hbb_common, previously consumed as
+    a git submodule, is vendored into this repository so that this repository
+    owns every line it builds.
+
+  * The daily outbound version-check callback is removed. It reported the
+    host's distribution, OS version, architecture and a device fingerprint to
+    a third-party endpoint once every twenty-four hours. The caller, the
+    request builder and the endpoint literal are all gone, and the `reqwest`
+    dependency it was the sole user of went with it.
+
+  * The compiled-in default rendezvous server and its public key are cleared.
+    A self-hosted build must not carry somebody else's address as a fallback.
+
+  * Eleven declared dependencies with no caller are removed, among them
+    `machine-uid`, `mac_address` and `whoami`, together with `fingerprint.rs`
+    and the `sysinfo` fork it needed. That module identified the machine it ran
+    on and existed to feed the callback above. There is now no code in this
+    tree that identifies the host to anybody.
+
+  * Two discarded write counts on the loopback consoles are fixed, and the tree
+    is made clean under `cargo clippy -- -D warnings` and `cargo fmt`.
+
+  * Deployment surfaces that this repository does not build or test are
+    removed: the Debian and FreeBSD packaging, the systemd units, the
+    Kubernetes example, the legacy Tauri administration GUI and the two
+    upstream container layouts. What ships is one multi-stage container image,
+    built and scanned by this repository's own CI.
+
+  * Identity strings, command-line help, environment-variable aliases and
+    documentation are renamed to nremote.
+
+The wire protocol is unchanged. This server interoperates with clients built
+from the prior work, which is what makes an incremental migration possible.

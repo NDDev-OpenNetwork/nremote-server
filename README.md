@@ -1,59 +1,91 @@
-# RustDesk Server Program
+# nremote-server
 
-[![build](https://github.com/rustdesk/rustdesk-server/actions/workflows/build.yaml/badge.svg)](https://github.com/rustdesk/rustdesk-server/actions/workflows/build.yaml)
+The rendezvous and relay services behind [nremote](https://github.com/NDDev-OpenNetwork/nremote),
+a self-hosted remote-desktop system.
 
-[**Download**](https://github.com/rustdesk/rustdesk-server/releases)
+Two binaries:
 
-[**Manual**](https://rustdesk.com/docs/en/self-host/)
+| Binary | Role | Listens on |
+| --- | --- | --- |
+| `hbbs` | rendezvous — registers device IDs, brokers direct connections | `21115/tcp`, `21116/tcp`, `21116/udp`, `21118/tcp` (websocket) |
+| `hbbr` | relay — carries the session when a direct connection cannot be made | `21117/tcp`, `21119/tcp` (websocket) |
 
-[**Configuration & environment variables**](docs/environment-variables.md)
+A third binary, `nremote-utils`, generates and validates key pairs and checks a
+server from the outside.
 
-[**FAQ**](https://github.com/rustdesk/rustdesk/wiki/FAQ)
+Most sessions never touch the relay: `hbbs` hole-punches and the two peers talk
+directly. The relay exists for the pairs that cannot, which on real networks is
+a minority but never zero.
 
-[**How to migrate OSS to Pro**](https://rustdesk.com/docs/en/self-host/rustdesk-server-pro/installscript/#convert-from-open-source)
-
-Self-host your own RustDesk server, it is free and open source.
-
-> [!IMPORTANT]
-> **Need more features?** [RustDesk Server Pro](https://rustdesk.com/pricing.html) might suit you better.
->
-> **Want to develop your own server?** Start with [rustdesk-server-demo](https://github.com/rustdesk/rustdesk-server-demo), a simpler starting point than this repository.
-
-## How to build manually
+## Run it
 
 ```bash
-cargo build --release
+mkdir -p data && chown 10001:10001 data   # the image runs as uid 10001
+docker compose up -d
 ```
 
-Three executables will be generated in target/release.
+Then read the public key the server generated on first start:
 
-- hbbs - RustDesk ID/Rendezvous server
-- hbbr - RustDesk relay server
-- rustdesk-utils - RustDesk CLI utilities
+```bash
+cat data/id_ed25519.pub
+```
 
-You can find updated binaries on the [Releases](https://github.com/rustdesk/rustdesk-server/releases) page.
+That key and the server's hostname are the two values a client needs. Nothing
+else is required, and neither value is a secret — every client that connects has
+to know both.
+
+`docker-compose.yml` in this repository is an example with a placeholder host.
+Set `-r` to your own address before using it.
+
+## Ports, and the two you should leave closed
+
+Open `21115/tcp`, `21116/tcp`, `21116/udp` and `21117/tcp`. UDP is not optional:
+`21116/udp` carries ID registration and the heartbeat, and a firewall that
+allows only the TCP half produces a server that accepts connections and never
+registers anyone.
+
+Leave `21118` and `21119` closed unless a reverse proxy sits in front of them.
+Both services read `X-Real-IP` and `X-Forwarded-For` on those websocket
+listeners and trust what they say. Anything that can reach them directly can
+claim any source address, which defeats per-IP rate limiting and corrupts every
+address in the log. They are useful behind a proxy that overwrites both headers.
+Directly exposed, they are a hole.
+
+## Keys
+
+`hbbs` generates `id_ed25519` and `id_ed25519.pub` in its working directory on
+first start. Keep the private half; losing it means every client has to be
+reconfigured with the new public key.
+
+`hbbr` defaults to an **empty** key, and empty does not mean "generate one" — it
+means relay validation is switched off, so anyone who can reach `21117` can push
+traffic through the relay. Pass `-k _` to make it load the same pair `hbbs`
+created. The example compose file does.
 
 ## Configuration
 
-`hbbs` and `hbbr` can be configured with command-line flags, environment
-variables, or an `.env` / config file. Run `hbbs --help` or `hbbr --help` to see
-the available flags.
+Flags, environment variables and the `.env` / `--config` precedence rules are
+documented in [docs/environment-variables.md](docs/environment-variables.md).
+The four that matter most:
 
-The most common options:
+| Setting | Flag | Applies to | Purpose |
+| --- | --- | --- | --- |
+| Key | `-k` | both | `_` loads or generates the key pair |
+| Relay address | `-r` | `hbbs` | what clients are told to relay through |
+| Port | `-p` | both | `hbbs` also binds `PORT-1` and `PORT+2` |
+| Force relay | `ALWAYS_USE_RELAY=Y` | `hbbs` | disables direct connections entirely |
 
-| Option | Flag | Env var | Applies to | Purpose |
-| --- | --- | --- | --- | --- |
-| Key | `-k` | `KEY` | hbbs, hbbr | `hbbs` loads/generates one by default |
-| Bind address | `-b` | `BIND` | hbbs, hbbr | Local IP address to listen on (default: all interfaces; requires 1.1.17+) |
-| Port | `-p` | `PORT` | hbbs, hbbr | Listening port (hbbs `21116`, hbbr `21117`) |
-| Relay servers | `-r` | `RELAY-SERVERS` | hbbs | Override when the relay uses a different address or a non-standard port |
-| Force relay | — | `ALWAYS_USE_RELAY` | hbbs | `Y` disables direct connections |
-| Log level | — | `RUST_LOG` | hbbs, hbbr | e.g. `debug` (default `info`) |
+## Build
 
-See **[docs/environment-variables.md](docs/environment-variables.md)** for the
-full list of variables, the file/flag/env precedence rules, database and relay
-bandwidth tuning, Docker image variables, and examples.
+```bash
+cargo build --release --locked
+```
 
-## Installation
+Needs a Rust toolchain and OpenSSL development headers (`libssl-dev` on Debian
+and Ubuntu). The container build in `Dockerfile` is the reference: if a change
+builds there, it builds.
 
-Please follow this [doc](https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/)
+## Licence
+
+AGPL-3.0-or-later. See [LICENSE](LICENSE), and [NOTICE](NOTICE) for the
+attribution and the list of modifications this repository carries.

@@ -1,0 +1,79 @@
+schema_version: 1
+
+repository:
+  id: "repo_01M1F9D1NQMGAEY1STJSBE909H"
+  display_name: "nremote-server"
+  roles:
+    - "project"
+  lifecycle: "active"
+
+provider:
+  type: "github"
+  installation: "installation:github-opennetwork"
+  repository_id: 1353975648
+  owner: "NDDev-OpenNetwork"
+  name: "nremote-server"
+
+classification:
+  portfolios:
+    - "portfolio:opennetwork-projects"
+  visibility_contract: "public"
+  data_classification: "public"
+
+product:
+  purpose: >-
+    The rendezvous and relay services behind nremote: hbbs registers device
+    identities and brokers direct peer connections, hbbr carries the session
+    for the pairs that cannot reach each other directly. Deployed as one
+    container image so that a remote-desktop session never leaves
+    infrastructure its operator controls.
+  capabilities:
+    - "register device identities and broker direct connections between peers"
+    - "relay a session when a direct connection cannot be established"
+    - "generate, validate and install the server key pair clients authenticate against"
+  entrypoints:
+    - change: "the rendezvous service, its listeners and its peer registry"
+      path: "src/rendezvous_server.rs"
+    - change: "the relay service and its bandwidth accounting"
+      path: "src/relay_server.rs"
+    - change: "the shared protocol library and the wire messages"
+      path: "libs/hbb_common"
+    - change: "the published container image"
+      path: "Dockerfile"
+
+policy:
+  profiles:
+    - "repository-default"
+    - "opennetwork-default"
+  rollout_ring: "standard"
+
+git:
+  default_branch: "main"
+  integration: "pull-request"
+  branch_model: "task-branches"
+  handoff_pr: "preferred"
+  cleanup: "merged-only"
+
+verification:
+  commands:
+    build:
+      - "cargo build --locked --all-targets"
+    test:
+      - "cargo test --locked --all-targets"
+    lint:
+      - "cargo clippy --locked --all-targets -- -D warnings"
+      - "cargo fmt --all --check"
+  required:
+    - "test"
+    - "lint"
+
+agent:
+  context_profile: "public-module"
+  generated_agents: false
+  serena:
+    enabled: false
+    provenance_required: false
+
+release:
+  mode: "github-release"
+  tag_style: "semver"

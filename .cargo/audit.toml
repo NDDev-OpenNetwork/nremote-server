@@ -1,0 +1,23 @@
+# One advisory is ignored here. Ignoring is not "accepted risk" by default: it
+# is a claim that the vulnerable code is not in what we ship, and the claim has
+# to be checkable from this file.
+#
+# RUSTSEC-2023-0071 -- Marvin attack, a timing side channel in `rsa`. There is
+# no patched release; the advisory has been open since 2023 with `patched: []`.
+#
+# `rsa` reaches this lockfile through `sqlx-mysql`, which `sqlx-macros-core`
+# depends on so the compile-time query checker can understand every driver.
+# Only the `sqlite` feature is enabled here, so `sqlx-mysql` is never built and
+# `rsa` is never linked. `cargo audit` reads the lockfile, which lists optional
+# dependencies whether or not their feature is on, so it sees a crate that this
+# binary does not contain.
+#
+# Check the claim rather than trusting this comment:
+#
+#     cargo tree -i rsa -e normal      # "nothing to print" -- not in the graph
+#     cargo tree -i sqlx-mysql -e normal
+#
+# If either ever prints a path, this entry is wrong and must go.
+
+[advisories]
+ignore = ["RUSTSEC-2023-0071"]

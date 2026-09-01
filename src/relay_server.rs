@@ -46,11 +46,7 @@ const BLACKLIST_FILE: &str = "blacklist.txt";
 const BLOCKLIST_FILE: &str = "blocklist.txt";
 
 #[tokio::main(flavor = "multi_thread")]
-pub async fn start_with_bind(
-    bind_addr: Option<IpAddr>,
-    port: &str,
-    key: &str,
-) -> ResultType<()> {
+pub async fn start_with_bind(bind_addr: Option<IpAddr>, port: &str, key: &str) -> ResultType<()> {
     let key = get_server_sk(key);
     if let Ok(mut file) = std::fs::File::open(BLACKLIST_FILE) {
         let mut contents = String::new();
@@ -399,7 +395,7 @@ async fn handle_connection(
             if let Ok(Ok(n)) = timeout(1000, stream.read(&mut buffer[..])).await {
                 if let Ok(data) = std::str::from_utf8(&buffer[..n]) {
                     let res = check_cmd(data, limiter).await;
-                    stream.write(res.as_bytes()).await.ok();
+                    stream.write_all(res.as_bytes()).await.ok();
                 }
             }
         });
@@ -417,6 +413,10 @@ async fn handle_connection(
     });
 }
 
+// The websocket handshake callback returns tungstenite's ErrorResponse,
+// whose size this code does not choose. Boxing it would change a callback
+// signature the library defines.
+#[allow(clippy::result_large_err)]
 async fn make_pair(
     stream: TcpStream,
     mut addr: SocketAddr,
@@ -436,7 +436,6 @@ async fn make_pair(
             // the WebSocket port directly to untrusted networks; only the
             // reverse proxy, which overwrites these headers, should be able to
             // connect to it.
-            // https://github.com/rustdesk/rustdesk-server/issues/634
             let real_ip = headers
                 .get("X-Real-IP")
                 .or_else(|| headers.get("X-Forwarded-For"))
@@ -654,15 +653,11 @@ impl StreamTrait for tokio_tungstenite::WebSocketStream<TcpStream> {
     async fn recv(&mut self) -> Option<Result<BytesMut, Error>> {
         if let Some(msg) = self.next().await {
             match msg {
-                Ok(msg) => {
-                    match msg {
-                        tungstenite::Message::Binary(bytes) => {
-                            Some(Ok(bytes[..].into())) // to-do: poor performance
-                        }
-                        _ => Some(Ok(BytesMut::new())),
-                    }
-                }
-                Err(err) => Some(Err(Error::new(std::io::ErrorKind::Other, err.to_string()))),
+                Ok(msg) => match msg {
+                    tungstenite::Message::Binary(bytes) => Some(Ok(bytes[..].into())),
+                    _ => Some(Ok(BytesMut::new())),
+                },
+                Err(err) => Some(Err(Error::other(err.to_string()))),
             }
         } else {
             None
@@ -670,9 +665,9 @@ impl StreamTrait for tokio_tungstenite::WebSocketStream<TcpStream> {
     }
 
     async fn send_raw(&mut self, bytes: Bytes) -> ResultType<()> {
-        Ok(self
-            .send(tungstenite::Message::Binary(bytes.to_vec()))
-            .await?) // to-do: poor performance
+        // tungstenite 0.26 carries the payload as Bytes, so this is the
+        // handoff it always should have been rather than a copy.
+        Ok(self.send(tungstenite::Message::Binary(bytes)).await?)
     }
 
     fn is_ws(&self) -> bool {

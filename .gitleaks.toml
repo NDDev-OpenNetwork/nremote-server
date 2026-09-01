@@ -1,0 +1,34 @@
+# Gitleaks configuration for nremote-server.
+#
+# The secret scan reads the whole ref history, and this repository's history is
+# imported. Thirty findings come from six documentation commits between
+# 2022 and 2024 -- one of them titled, exactly, "test secrets" -- which pasted an
+# example `KEY_PRIV` / `KEY_PUB` pair into README translations to show what the
+# environment variables look like. Those are published example keys in public
+# documentation, not credentials, and four of the five files no longer exist in
+# this tree at all.
+#
+# History cannot be edited to remove them without discarding the provenance of
+# every commit under it, which is a far worse trade than an exception that names
+# the six commits.
+#
+# The allowlist is keyed on commit rather than on path. Allowlisting `README.md`
+# would blind the scan to a real secret committed to that file tomorrow; naming
+# a commit that already exists cannot hide anything that has not happened yet.
+#
+# The default ruleset stays on, and everything outside these six commits is
+# scanned normally.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Example KEY_PRIV/KEY_PUB pairs in imported upstream README translations"
+commits = [
+  "0862bc8c043159ab391aef3af46486fb593ff05b", # 2022-07-13 "test secrets", README.md
+  "70e6cf13ecdd60a0d3805ca76e5db942835314b8", # 2022-07-22 "updated README", README.md
+  "ffe736be17b087fd9ca4482076e2ed01209b9a52", # 2023-03-15 README-NL.md, since deleted
+  "1addf8c9eb2a6ab9cfa154d5862d819ed26adcff", # 2023-04-27 README-DE.md, since deleted
+  "bac9548f86e74becccde07e9a3ef1798b7262a35", # 2024-02-16 README-TW.md, since deleted
+  "4240c47244d7775637c53503fe821fcbe5c6af4c", # 2024-04-24 README-ZH.md, since deleted
+]

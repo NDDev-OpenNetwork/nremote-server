@@ -20,8 +20,8 @@ fn main() -> ResultType<()> {
     );
     let matches = App::new("hbbr")
         .version(version::VERSION)
-        .author("Purslane Ltd. <info@rustdesk.com>")
-        .about("RustDesk Relay Server")
+        .author("NDDev <danil@nddev.it.com>")
+        .about("nremote relay server")
         .args_from_usage(&args)
         .get_matches();
     if let Ok(v) = ini::Ini::load_from_file(".env") {

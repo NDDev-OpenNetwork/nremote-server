@@ -1,0 +1,75 @@
+name: security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, so an advisory published after the last push is still seen. This
+    # program terminates connections from the public internet; "nobody has
+    # pushed lately" is not a reason to stop looking.
+    - cron: '41 4 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  codeql:
+    name: codeql
+    permissions:
+      actions: read # CodeQL reads the workflow definitions it analyses
+      contents: read
+      security-events: write # CodeQL publishes its findings to code scanning
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      languages: '["rust", "actions"]'
+      queries: security-and-quality
+      # Rust extraction needs a real build; autobuild guesses, and a guess that
+      # compiles nothing yields an empty database and a green result.
+      build_command: 'cargo build --workspace --locked'
+
+  dependency-review:
+    name: dependency-review
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write # writes the review it produces
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      fail_on_severity: moderate
+
+  scorecard:
+    name: scorecard
+    if: github.event_name != 'pull_request'
+    permissions:
+      actions: read # Scorecard reads workflow definitions
+      contents: read
+      id-token: write # mints the OIDC token its publication is signed with
+      security-events: write # Scorecard publishes its findings to code scanning
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-scorecard.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+
+  osv:
+    name: osv
+    permissions:
+      contents: read
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/osv-scan.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+
+  zizmor:
+    name: zizmor
+    permissions:
+      actions: read # the SARIF upload reads this run to attach its results
+      contents: read
+      security-events: write # zizmor publishes its findings to code scanning
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-sarif.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+
+  secret-scan:
+    name: secret-scan
+    permissions:
+      contents: read
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243

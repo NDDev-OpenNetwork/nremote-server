@@ -1,36 +1,58 @@
-version: '3'
-
-networks:
-  rustdesk-net:
-    external: false
+# Example deployment. Replace the image tag with a digest and the host with
+# your own before running this anywhere that matters.
+#
+# Two services, one image. They are separate containers because they fail and
+# restart independently: a relay that is being restarted should not take the
+# rendezvous service with it, and an operator who wants to change relay
+# bandwidth should not have to interrupt sessions that are already established.
 
 services:
   hbbs:
-    container_name: hbbs
+    image: ghcr.io/nddev-opennetwork/nremote-server:latest
+    container_name: nremote-hbbs
+    # -r tells clients where the relay is. It can be omitted when hbbr answers
+    # on the same host at the default port 21117, because clients derive it;
+    # it is set here because an explicit address survives the host getting a
+    # second interface, and because a wrong relay address is invisible until
+    # the first connection that needs one.
+    command: ["hbbs", "-r", "remote.example.com:21117"]
     ports:
-      - 21115:21115
-      - 21116:21116
-      - 21116:21116/udp
-      - 21118:21118
-    image: rustdesk/rustdesk-server:latest
-    command: hbbs -r rustdesk.example.com:21117
+      - "21115:21115/tcp"
+      - "21116:21116/tcp"
+      - "21116:21116/udp"
     volumes:
-      - ./data:/root
-    networks:
-      - rustdesk-net
-    depends_on:
-      - hbbr
+      - ./data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/21116"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   hbbr:
-    container_name: hbbr
+    image: ghcr.io/nddev-opennetwork/nremote-server:latest
+    container_name: nremote-hbbr
+    # -k _ loads the key pair hbbs generated in the shared data directory.
+    # Without it hbbr runs with an EMPTY key, which does not mean "no key" --
+    # it means relay validation is switched off and anyone who can reach port
+    # 21117 can relay traffic through this host. That is the upstream default
+    # and it is the wrong one for a relay on a public address.
+    command: ["hbbr", "-k", "_"]
     ports:
-      - 21117:21117
-      - 21119:21119
-    image: rustdesk/rustdesk-server:latest
-    command: hbbr
+      - "21117:21117/tcp"
     volumes:
-      - ./data:/root
-    networks:
-      - rustdesk-net
+      - ./data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/21117"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# Ports 21118 and 21119 are the websocket listeners and are deliberately not
+# published. Both services read X-Real-IP and X-Forwarded-For from those
+# connections without validating them, so anything that can reach those ports
+# directly can claim any source address and walk past per-IP rate limiting.
+# They belong behind a reverse proxy that overwrites both headers, or nowhere.
