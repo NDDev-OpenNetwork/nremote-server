@@ -262,6 +262,7 @@ fn open_secretbox_payload(data: &[u8], key: &secretbox::Key) -> Result<Vec<u8>, 
     secretbox::open(data, &legacy_nonce, key)
 }
 
+#[cfg(test)]
 mod test {
 
     #[test]
