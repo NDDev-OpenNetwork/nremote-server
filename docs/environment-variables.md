@@ -1,7 +1,7 @@
 # Configuration & Environment Variables
 
 This document is the single reference for every option that the open‑source
-RustDesk server binaries (`hbbs`, `hbbr`) understand: command‑line flags,
+nremote server binaries (`hbbs`, `hbbr`) understand: command‑line flags,
 environment variables, and configuration files.
 
 > **TL;DR** — For most people the command‑line flags shown by `hbbs --help` /
@@ -51,8 +51,8 @@ in the inherited process environment.
 
 🅴 = set through the inherited process environment.
 
-> `PORT_FOR_API` / `KEY_FOR_API` are only used by RustDesk Server **Pro** and its
-> API; they have no effect in the open‑source server.
+> `PORT_FOR_API` / `KEY_FOR_API` are read by an API server that this
+> repository does not contain. They have no effect here.
 
 ---
 
@@ -102,7 +102,7 @@ Both can also be edited live through the `hbbr` loopback console (`ba`/`br`,
 ### Runtime console
 
 The runtime consoles are TCP command transports built into the services; they
-are not `rustdesk-utils` commands or interactive standard-input consoles. A
+are not `nremote-utils` commands or interactive standard-input consoles. A
 connection from a loopback address is treated as a single console command:
 
 ```bash
@@ -174,25 +174,27 @@ image, the working directory is `/data`.
 
 ---
 
-## Docker image variables
+## The container image
 
-The supervisor image (`rustdesk/rustdesk-server-s6`) starts both binaries with
-s6 and adds a few convenience variables handled by its service scripts, **not**
-by `hbbs`/`hbbr` directly:
+`ghcr.io/nddev-opennetwork/nremote-server` carries `hbbs`, `hbbr` and
+`nremote-utils` and no supervisor. The command selects the service, so every
+flag in the tables above is passed the way it would be on a shell, and every
+environment variable is passed straight through:
 
-| Variable | Default | Description |
-|---|---|---|
-| `RELAY` | `relay.example.com` | Passed to `hbbs` as `-r $RELAY` (your public address). |
-| `ENCRYPTED_ONLY` | `0` | `1` adds `-k _` to both servers. This is redundant for `hbbs`, whose default is `-`, and opts `hbbr` into key validation instead of its intentional empty default. |
-| `KEY_PUB` | *(unset)* | If set, written to `/data/id_ed25519.pub` on first start. |
-| `KEY_PRIV` | *(unset)* | If set, written to `/data/id_ed25519` on first start. Provide **both** `KEY_PUB` and `KEY_PRIV`, or neither. |
+```bash
+docker run -v ./data:/data -e ALWAYS_USE_RELAY=Y \
+  ghcr.io/nddev-opennetwork/nremote-server hbbs -r remote.example.com:21117
+```
 
-Any variable from the tables above can also be passed straight through the
-container's environment (e.g. `-e ALWAYS_USE_RELAY=Y`, `-e RUST_LOG=debug`).
+The working directory inside the image is `/data`, so that is where the key
+pair and the SQLite database are written. The process runs as uid 10001, which
+must own the mounted directory.
 
-The classic scratch image (`rustdesk/rustdesk-server`) contains only the
-binaries and does **not** implement `RELAY`, `ENCRYPTED_ONLY`, `KEY_PUB`, or
-`KEY_PRIV`; those variables are ignored by that image.
+There is no `RELAY`, `ENCRYPTED_ONLY`, `KEY_PUB` or `KEY_PRIV` variable. Those
+belonged to a supervisor layer that translated them into the flags above, and
+a second spelling for `-r` and `-k` is a second thing that can be wrong. To
+install an existing key pair, write `id_ed25519` and `id_ed25519.pub` into the
+data directory before the first start.
 
 ---
 
@@ -202,7 +204,7 @@ binaries and does **not** implement `RELAY`, `ENCRYPTED_ONLY`, `KEY_PUB`, or
 
 ```bash
 # Tell clients where the relay listens because it is not using port 21117.
-hbbs -p 22116 -r rustdesk.example.com:22117
+hbbs -p 22116 -r remote.example.com:22117
 hbbr -p 22117
 ```
 
@@ -210,31 +212,37 @@ hbbr -p 22117
 
 ```ini
 # Non-standard ports shared by both binaries; hbbr listens on PORT+1.
-relay-servers=rustdesk.example.com:22117
+relay-servers=remote.example.com:22117
 PORT=22116
 ```
 
 ### docker-compose
 
+See `docker-compose.yml` in the repository root for the maintained example. In
+short:
+
 ```yaml
 services:
-  rustdesk-server:
-    image: rustdesk/rustdesk-server-s6:latest
+  hbbs:
+    image: ghcr.io/nddev-opennetwork/nremote-server:latest
+    command: ["hbbs", "-r", "remote.example.com:21117"]
     environment:
-      - RELAY=rustdesk.example.com:21117
       - ALWAYS_USE_RELAY=Y
       - RUST_LOG=info
+    ports: ["21115:21115/tcp", "21116:21116/tcp", "21116:21116/udp"]
+    volumes: ["./data:/data"]
+    restart: unless-stopped
+  hbbr:
+    image: ghcr.io/nddev-opennetwork/nremote-server:latest
+    command: ["hbbr", "-k", "_"]
+    environment:
       - SINGLE_BANDWIDTH=256
-    ports:
-      - "21115:21115"
-      - "21116:21116"
-      - "21116:21116/udp"
-      - "21117:21117"
-      - "21118:21118"
-      - "21119:21119"
+    ports: ["21117:21117/tcp"]
     volumes: ["./data:/data"]
     restart: unless-stopped
 ```
+
+`21118` and `21119` are absent on purpose; see the README.
 
 ### systemd
 
@@ -257,5 +265,7 @@ ExecStart=/usr/bin/hbbs
 | 21118 | TCP | hbbs | WebSocket rendezvous (`PORT+2`) |
 | 21119 | TCP | hbbr | WebSocket relay (`hbbr PORT+2`) |
 
-Ports 21118/21119 are only needed for the web client; you can omit them
-otherwise.
+Ports 21118 and 21119 serve the web client only. Leave them closed unless a
+reverse proxy that overwrites `X-Real-IP` and `X-Forwarded-For` sits in front
+of them: both services trust those headers as given, so direct access lets a
+caller claim any source address and step around per-IP rate limiting.

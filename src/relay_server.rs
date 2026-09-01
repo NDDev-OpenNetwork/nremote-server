@@ -46,11 +46,7 @@ const BLACKLIST_FILE: &str = "blacklist.txt";
 const BLOCKLIST_FILE: &str = "blocklist.txt";
 
 #[tokio::main(flavor = "multi_thread")]
-pub async fn start_with_bind(
-    bind_addr: Option<IpAddr>,
-    port: &str,
-    key: &str,
-) -> ResultType<()> {
+pub async fn start_with_bind(bind_addr: Option<IpAddr>, port: &str, key: &str) -> ResultType<()> {
     let key = get_server_sk(key);
     if let Ok(mut file) = std::fs::File::open(BLACKLIST_FILE) {
         let mut contents = String::new();
@@ -436,7 +432,6 @@ async fn make_pair(
             // the WebSocket port directly to untrusted networks; only the
             // reverse proxy, which overwrites these headers, should be able to
             // connect to it.
-            // https://github.com/rustdesk/rustdesk-server/issues/634
             let real_ip = headers
                 .get("X-Real-IP")
                 .or_else(|| headers.get("X-Forwarded-For"))

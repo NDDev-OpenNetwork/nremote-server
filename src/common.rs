@@ -1,6 +1,8 @@
 use clap::App;
 use hbb_common::{
-    allow_err, anyhow::{Context, Result}, log, tokio, ResultType
+    allow_err,
+    anyhow::{Context, Result},
+    log, tokio, ResultType,
 };
 use ini::Ini;
 use sodiumoxide::crypto::sign;
@@ -120,23 +122,19 @@ pub fn set_arg(name: &str, value: &str) {
 pub fn init_args(args: &str, name: &str, about: &str) {
     let matches = App::new(name)
         .version(crate::version::VERSION)
-        .author("Purslane Ltd. <info@rustdesk.com>")
+        .author("NDDev <danil@nddev.it.com>")
         .about(about)
         .args_from_usage(args)
         .get_matches();
     if let Ok(v) = Ini::load_from_file(".env") {
         if let Some(section) = v.section(None::<String>) {
-            section
-                .iter()
-                .for_each(|(k, v)| set_arg(k, v));
+            section.iter().for_each(|(k, v)| set_arg(k, v));
         }
     }
     if let Some(config) = matches.value_of("config") {
         if let Ok(v) = Ini::load_from_file(config) {
             if let Some(section) = v.section(None::<String>) {
-                section
-                    .iter()
-                    .for_each(|(k, v)| set_arg(k, v));
+                section.iter().for_each(|(k, v)| set_arg(k, v));
             }
         }
     }
@@ -278,7 +276,6 @@ pub async fn listen_signal() -> Result<()> {
     unreachable!();
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,30 +284,30 @@ mod tests {
     #[test]
     fn argument_names_ignore_case_and_separator() {
         let aliases = [
-            "RUSTDESK-CONFIG-ALIAS-TEST",
-            "RUSTDESK_CONFIG_ALIAS_TEST",
-            "rustdesk-config-alias-test",
-            "rustdesk_config_alias_test",
-            "RustDesk_Config-Alias_Test",
+            "NREMOTE-CONFIG-ALIAS-TEST",
+            "NREMOTE_CONFIG_ALIAS_TEST",
+            "nremote-config-alias-test",
+            "nremote_config_alias_test",
+            "NRemote_Config-Alias_Test",
         ];
         for alias in aliases {
             std::env::remove_var(alias);
         }
         for alias in aliases {
             std::env::set_var(alias, alias);
-            assert_eq!(get_arg("RUSTDESK_CONFIG_ALIAS_TEST"), alias);
+            assert_eq!(get_arg("NREMOTE_CONFIG_ALIAS_TEST"), alias);
             std::env::remove_var(alias);
         }
-        set_arg("rustdesk_config_alias_test", "normalized");
+        set_arg("nremote_config_alias_test", "normalized");
         assert_eq!(
-            std::env::var("RUSTDESK-CONFIG-ALIAS-TEST").unwrap(),
+            std::env::var("NREMOTE-CONFIG-ALIAS-TEST").unwrap(),
             "normalized"
         );
-        std::env::set_var("RUSTDESK_CONFIG_ALIAS_TEST", "inherited");
-        set_arg("rustdesk-config-alias-test", "higher-priority");
-        assert_eq!(get_arg("rustdesk_config_alias_test"), "higher-priority");
-        std::env::remove_var("RUSTDESK-CONFIG-ALIAS-TEST");
-        std::env::remove_var("RUSTDESK_CONFIG_ALIAS_TEST");
+        std::env::set_var("NREMOTE_CONFIG_ALIAS_TEST", "inherited");
+        set_arg("nremote-config-alias-test", "higher-priority");
+        assert_eq!(get_arg("nremote_config_alias_test"), "higher-priority");
+        std::env::remove_var("NREMOTE-CONFIG-ALIAS-TEST");
+        std::env::remove_var("NREMOTE_CONFIG_ALIAS_TEST");
     }
 
     #[test]

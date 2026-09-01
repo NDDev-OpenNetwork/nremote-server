@@ -1,7 +1,7 @@
 use hbb_common::{protobuf::Message, rendezvous_proto::RendezvousMessage};
 use std::process::Command;
 
-const CHILD_ENV: &str = "RUSTDESK_PROTOBUF_RECURSION_CHILD";
+const CHILD_ENV: &str = "NREMOTE_PROTOBUF_RECURSION_CHILD";
 const CHILD_COMPLETION_SENTINEL: &str = "protobuf_recursion_child_completed";
 const TEST_NAME: &str = "deeply_nested_unknown_groups_are_rejected_without_aborting";
 
