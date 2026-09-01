@@ -51,17 +51,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
+          IMAGE: ghcr.io/nddev-opennetwork/nremote-server
         run: |
           set -euo pipefail
+          notes=$(mktemp)
+          # The backticks and braces below are markdown and a Go template, not
+          # command substitution and not an Actions expression.
+          # shellcheck disable=SC2016
+          {
+            printf 'Container image: `%s:%s`\n\n' "$IMAGE" "$TAG"
+            printf 'Pin it by digest before deploying:\n\n'
+            printf '```bash\n'
+            printf "docker buildx imagetools inspect %s:%s --format '{{.Manifest.Digest}}'\n" "$IMAGE" "$TAG"
+            printf '```\n'
+          } > "$notes"
           gh release create "$TAG" \
             --repo "$REPO" \
             --title "$TAG" \
             --generate-notes \
-            --notes "Container image: \`ghcr.io/nddev-opennetwork/nremote-server:$TAG\`
-
-Pin it by digest before deploying:
-
-\`\`\`bash
-docker buildx imagetools inspect ghcr.io/nddev-opennetwork/nremote-server:$TAG --format '{{.Manifest.Digest}}'
-\`\`\`
-"
+            --notes-file "$notes"
