@@ -36,6 +36,18 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 --user-group --home-dir /data --no-create-home nremote
 
+# OCI labels, so the published package names the source it came from rather
+# than being an anonymous blob in a registry. `image.source` is what links a
+# GHCR package to its repository, which is what makes the README, the licence
+# and the commit visible on the package page.
+LABEL org.opencontainers.image.title="nremote-server" \
+      org.opencontainers.image.description="Self-hosted rendezvous (hbbs) and relay (hbbr) for nremote" \
+      org.opencontainers.image.source="https://github.com/NDDev-OpenNetwork/nremote-server" \
+      org.opencontainers.image.url="https://github.com/NDDev-OpenNetwork/nremote-server" \
+      org.opencontainers.image.documentation="https://github.com/NDDev-OpenNetwork/nremote-server#readme" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.vendor="NDDev"
+
 COPY --from=build /out/hbbs /usr/local/bin/hbbs
 COPY --from=build /out/hbbr /usr/local/bin/hbbr
 COPY --from=build /out/nremote-utils /usr/local/bin/nremote-utils
