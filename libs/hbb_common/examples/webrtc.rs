@@ -4,10 +4,6 @@ extern crate hbb_common;
 use hbb_common::webrtc::WebRTCStream;
 
 use anyhow::Result;
-use bytes::Bytes;
-use clap::{Arg, Command};
-use std::io::Write;
-use tokio::time::Duration;
 
 #[cfg(not(feature = "webrtc"))]
 #[tokio::main]

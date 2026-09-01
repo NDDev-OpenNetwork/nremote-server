@@ -6,6 +6,10 @@ use std::net::SocketAddr;
 use tokio::net::TcpStream;
 
 // support Websocket and tcp.
+// The websocket variant is much larger than the tcp one. Boxing it would put
+// an allocation and a pointer chase on every frame of the hot path to save
+// stack on a value there is one of per connection.
+#[allow(clippy::large_enum_variant)]
 pub enum Stream {
     #[cfg(feature = "webrtc")]
     WebRTC(webrtc::WebRTCStream),

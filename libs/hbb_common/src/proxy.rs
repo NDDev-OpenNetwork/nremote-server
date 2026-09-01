@@ -76,7 +76,7 @@ impl IntoUrl for Url {
     }
 }
 
-impl<'a> IntoUrl for &'a str {
+impl IntoUrl for &str {
     fn into_url(self) -> Result<Url, ProxyError> {
         Url::parse(self)
             .map_err(ProxyError::UrlParseScheme)?
@@ -88,7 +88,7 @@ impl<'a> IntoUrl for &'a str {
     }
 }
 
-impl<'a> IntoUrl for &'a String {
+impl IntoUrl for &String {
     fn into_url(self) -> Result<Url, ProxyError> {
         (&**self).into_url()
     }
@@ -98,7 +98,7 @@ impl<'a> IntoUrl for &'a String {
     }
 }
 
-impl<'a> IntoUrl for String {
+impl IntoUrl for String {
     fn into_url(self) -> Result<Url, ProxyError> {
         (&*self).into_url()
     }
@@ -123,7 +123,7 @@ impl Auth {
     }
 
     pub fn get_basic_authorization(&self) -> String {
-        let authorization = format!("{}:{}", &self.user_name, &self.password);
+        let authorization = format!("{}:{}", self.user_name, self.password);
         general_purpose::STANDARD.encode(authorization.as_bytes())
     }
 
@@ -207,7 +207,7 @@ impl ProxyScheme {
             addrs
                 .into_iter()
                 .next()
-                .ok_or_else(|| ProxyError::UrlParseScheme(url::ParseError::EmptyHost))
+                .ok_or(ProxyError::UrlParseScheme(url::ParseError::EmptyHost))
         };
 
         let mut scheme: Self = match url.scheme() {
@@ -229,7 +229,7 @@ impl ProxyScheme {
         match self {
             ProxyScheme::Http { host, .. } => self.resolve_host(host, 80).await,
             ProxyScheme::Https { host, .. } => self.resolve_host(host, 443).await,
-            ProxyScheme::Socks5 { addr, .. } => Ok(addr.clone()),
+            ProxyScheme::Socks5 { addr, .. } => Ok(*addr),
         }
     }
 
@@ -323,10 +323,7 @@ impl Proxy {
     }
 
     pub fn is_http_or_https(&self) -> bool {
-        return match self.intercept {
-            ProxyScheme::Socks5 { .. } => false,
-            _ => true,
-        };
+        !matches!(self.intercept, ProxyScheme::Socks5 { .. })
     }
 
     pub fn from_conf(conf: &Socks5Server, ms_timeout: Option<u64>) -> Result<Self, ProxyError> {
@@ -393,7 +390,7 @@ impl Proxy {
         let stream = self.new_stream(local, proxy).await?;
         let addr = stream.local_addr()?;
 
-        return match self.intercept {
+        match self.intercept {
             ProxyScheme::Http { .. } => {
                 log::trace!("Connect to remote http proxy server: {}", proxy);
                 let stream =
@@ -474,7 +471,7 @@ impl Proxy {
                     0,
                 ))
             }
-        };
+        }
     }
 
     async fn https_connect_nativetls_wrap_danger<'a>(
@@ -490,7 +487,7 @@ impl Proxy {
             self.ms_timeout,
             self.https_connect_nativetls(
                 stream,
-                &target_addr,
+                target_addr,
                 danger_accept_invalid_cert.unwrap_or(false),
             ),
         )
@@ -524,6 +521,9 @@ impl Proxy {
     }
 
     #[async_recursion]
+    // Nine, because a proxied TLS connection is described by nine things and
+    // this is the one place that holds all of them at once.
+    #[allow(clippy::too_many_arguments)]
     async fn https_connect_rustls_wrap_danger<'a>(
         &self,
         url: &str,
@@ -548,7 +548,7 @@ impl Proxy {
         {
             Ok(s) => {
                 upsert_tls_cache(
-                    &url,
+                    url,
                     TlsType::Rustls,
                     danger_accept_invalid_cert.unwrap_or(false),
                 );
@@ -574,7 +574,7 @@ impl Proxy {
                         "Falling back to rustls-tls (accept invalid cert) for HTTPS proxy server."
                     );
                     self.https_connect_rustls_wrap_danger(
-                        &url,
+                        url,
                         local,
                         proxy,
                         None,
@@ -587,10 +587,10 @@ impl Proxy {
                 } else if !is_tls_type_cached {
                     log::warn!("Falling back to native-tls for HTTPS proxy server.");
                     self.https_connect_nativetls_wrap_danger(
-                        &url,
+                        url,
                         local,
                         proxy,
-                        &target_addr,
+                        target_addr,
                         origin_danger_accept_invalid_cert,
                     )
                     .await?
@@ -704,7 +704,7 @@ where
     let response_bytes = response_string.into_bytes();
     response.parse(&response_bytes)?;
 
-    return match response.code {
+    match response.code {
         Some(code) => {
             if code == 200 {
                 Ok(())
@@ -713,5 +713,5 @@ where
             }
         }
         None => Err(ProxyError::NoHttpCode),
-    };
+    }
 }

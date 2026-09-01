@@ -35,7 +35,12 @@ pub struct Database {
     pool: Pool,
 }
 
+// Every field is written by `query_as!` from the columns it selects, so
+// none of them can be dropped without changing the query. `id`, `user` and
+// `status` have no reader in this server; they belong to the account
+// management that the open-source build does not contain.
 #[derive(Default)]
+#[allow(dead_code)]
 pub struct Peer {
     pub guid: Vec<u8>,
     pub id: String,

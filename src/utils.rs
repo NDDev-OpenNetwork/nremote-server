@@ -14,7 +14,7 @@ fn print_help() {
 Available Commands:
     genkeypair                                   Generate a new keypair
     validatekeypair [public key] [secret key]    Validate an existing keypair
-    doctor [nremote-server]                     Check for server connection problems"
+    doctor [nremote-server]                      Check for server connection problems"
     );
     process::exit(0x0001);
 }

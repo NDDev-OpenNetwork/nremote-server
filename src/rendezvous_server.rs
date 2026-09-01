@@ -249,6 +249,10 @@ impl RendezvousServer {
         )
     }
 
+    // Eight, and each one is a distinct listener or channel this loop owns.
+    // Grouping them into a struct would move the same fields behind one name
+    // without making the loop simpler to read.
+    #[allow(clippy::too_many_arguments)]
     async fn io_loop(
         &mut self,
         rx: &mut Receiver,
@@ -353,14 +357,14 @@ impl RendezvousServer {
         bytes: &BytesMut,
         addr: SocketAddr,
         socket: &mut FramedSocket,
-        key: &str,
+        _key: &str,
     ) -> ResultType<()> {
         if let Ok(msg_in) = RendezvousMessage::parse_from_bytes(bytes) {
             match msg_in.union {
                 Some(rendezvous_message::Union::RegisterPeer(rp)) => {
                     // B registered
                     if !rp.id.is_empty() {
-                        log::trace!("New peer registered: {:?} {:?}", &rp.id, &addr);
+                        log::trace!("New peer registered: {:?} {:?}", rp.id, addr);
                         self.update_addr(rp.id, addr, socket).await?;
                         if self.inner.serial > rp.serial {
                             let mut msg_out = RendezvousMessage::new();
@@ -458,14 +462,14 @@ impl RendezvousServer {
                     });
                     socket.send(&msg_out, addr).await?
                 }
-                Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
+                Some(rendezvous_message::Union::PunchHoleRequest(_ph)) => {
                     // UDP PunchHoleRequest is intentionally unsupported.
                     // The supported client path sends PunchHoleRequest over TCP/WS.
                 }
-                Some(rendezvous_message::Union::PunchHoleSent(phs)) => {
+                Some(rendezvous_message::Union::PunchHoleSent(_phs)) => {
                     // UDP PunchHoleSent is intentionally unsupported to avoid UDP reflection/amplification
                 }
-                Some(rendezvous_message::Union::LocalAddr(la)) => {
+                Some(rendezvous_message::Union::LocalAddr(_la)) => {
                     // UDP LocalAddr is intentionally unsupported to avoid UDP reflection/amplification
                 }
                 Some(rendezvous_message::Union::ConfigureUpdate(mut cu)) => {
@@ -489,15 +493,15 @@ impl RendezvousServer {
                         );
                     }
                 }
-                Some(rendezvous_message::Union::SoftwareUpdate(su)) => {
-                    if !self.inner.version.is_empty() && su.url != self.inner.version {
-                        let mut msg_out = RendezvousMessage::new();
-                        msg_out.set_software_update(SoftwareUpdate {
-                            url: self.inner.software_url.clone(),
-                            ..Default::default()
-                        });
-                        socket.send(&msg_out, addr).await?;
-                    }
+                Some(rendezvous_message::Union::SoftwareUpdate(su))
+                    if !self.inner.version.is_empty() && su.url != self.inner.version =>
+                {
+                    let mut msg_out = RendezvousMessage::new();
+                    msg_out.set_software_update(SoftwareUpdate {
+                        url: self.inner.software_url.clone(),
+                        ..Default::default()
+                    });
+                    socket.send(&msg_out, addr).await?;
                 }
                 _ => {}
             }
@@ -640,19 +644,19 @@ impl RendezvousServer {
     }
 
     #[inline]
-    async fn handle_hole_sent<'a>(
+    async fn handle_hole_sent(
         &mut self,
         phs: PunchHoleSent,
         addr: SocketAddr,
-        socket: Option<&'a mut FramedSocket>,
+        socket: Option<&mut FramedSocket>,
     ) -> ResultType<()> {
         // punch hole sent from B, tell A that B is ready to be connected
         let addr_a = AddrMangle::decode(&phs.socket_addr);
         log::debug!(
             "{} punch hole response to {:?} from {:?}",
             if socket.is_none() { "TCP" } else { "UDP" },
-            &addr_a,
-            &addr
+            addr_a,
+            addr
         );
         let mut msg_out = RendezvousMessage::new();
         let mut p = PunchHoleResponse {
@@ -674,19 +678,19 @@ impl RendezvousServer {
     }
 
     #[inline]
-    async fn handle_local_addr<'a>(
+    async fn handle_local_addr(
         &mut self,
         la: LocalAddr,
         addr: SocketAddr,
-        socket: Option<&'a mut FramedSocket>,
+        socket: Option<&mut FramedSocket>,
     ) -> ResultType<()> {
         // relay local addrs of B to A
         let addr_a = AddrMangle::decode(&la.socket_addr);
         log::debug!(
             "{} local addrs response to {:?} from {:?}",
             if socket.is_none() { "TCP" } else { "UDP" },
-            &addr_a,
-            &addr
+            addr_a,
+            addr
         );
         let mut msg_out = RendezvousMessage::new();
         let mut p = PunchHoleResponse {
@@ -836,7 +840,7 @@ impl RendezvousServer {
         stream: &mut FramedStream,
         peers: Vec<String>,
     ) -> ResultType<()> {
-        let mut states = BytesMut::zeroed((peers.len() + 7) / 8);
+        let mut states = BytesMut::zeroed(peers.len().div_ceil(8));
         for (i, peer_id) in peers.iter().enumerate() {
             if let Some(peer) = self.pm.get_in_memory(peer_id).await {
                 let elapsed = peer.read().await.last_reg_time.elapsed().as_millis() as i64;
@@ -911,6 +915,11 @@ impl RendezvousServer {
         Ok(())
     }
 
+    // Unreachable in the current dispatch: the UDP path routes punch-hole
+    // requests through handle_punch_hole_request. Left in place rather than
+    // deleted because its absence would be a claim about the protocol that
+    // nothing here proves.
+    #[allow(dead_code)]
     #[inline]
     async fn handle_udp_punch_hole_request(
         &mut self,
@@ -943,7 +952,7 @@ impl RendezvousServer {
             counter.1 = now;
 
             let counter = &mut old.1;
-            let is_new = counter.0.get(id).is_none();
+            let is_new = !counter.0.contains(id);
             if counter.1.elapsed().as_secs() > DAY_SECONDS {
                 counter.0.clear();
             } else if counter.0.len() > 300 {
@@ -1095,7 +1104,7 @@ impl RendezvousServer {
                 if let Some("-") = arg {
                     lock.clear();
                 } else {
-                    let mut start = arg.and_then(|x| x.parse::<usize>().ok()).unwrap_or(0);
+                    let start = arg.and_then(|x| x.parse::<usize>().ok()).unwrap_or(0);
                     let mut page_size = fds
                         .next()
                         .and_then(|x| x.parse::<usize>().ok())
@@ -1160,7 +1169,7 @@ impl RendezvousServer {
                 if let Ok(Ok(n)) = timeout(1000, stream.read(&mut buffer[..])).await {
                     if let Ok(data) = std::str::from_utf8(&buffer[..n]) {
                         let res = rs.check_cmd(data).await;
-                        stream.write(res.as_bytes()).await.ok();
+                        stream.write_all(res.as_bytes()).await.ok();
                     }
                 }
             });
@@ -1199,6 +1208,10 @@ impl RendezvousServer {
         });
     }
 
+    // The websocket handshake callback returns tungstenite's ErrorResponse,
+    // whose size this code does not choose. Boxing it would change a callback
+    // signature the library defines.
+    #[allow(clippy::result_large_err)]
     #[inline]
     async fn handle_listener_inner(
         &mut self,
@@ -1261,27 +1274,29 @@ impl RendezvousServer {
 
     #[inline]
     async fn get_pk(&mut self, version: &str, id: String) -> Bytes {
-        if version.is_empty() || self.inner.sk.is_none() {
-            Bytes::new()
-        } else {
-            match self.pm.get(&id).await {
-                Some(peer) => {
-                    let pk = peer.read().await.pk.clone();
-                    sign::sign(
-                        &hbb_common::message_proto::IdPk {
-                            id,
-                            pk,
-                            ..Default::default()
-                        }
-                        .write_to_bytes()
-                        .unwrap_or_default(),
-                        self.inner.sk.as_ref().unwrap(),
-                    )
-                    .into()
-                }
-                _ => Bytes::new(),
-            }
+        if version.is_empty() {
+            return Bytes::new();
         }
+        let Some(peer) = self.pm.get(&id).await else {
+            return Bytes::new();
+        };
+        let pk = peer.read().await.pk.clone();
+        // Read after the peer lookup and held across no await, so the borrow of
+        // inner ends inside this expression.
+        let Some(sk) = self.inner.sk.as_ref() else {
+            return Bytes::new();
+        };
+        sign::sign(
+            &hbb_common::message_proto::IdPk {
+                id,
+                pk,
+                ..Default::default()
+            }
+            .write_to_bytes()
+            .unwrap_or_default(),
+            sk,
+        )
+        .into()
     }
 
     #[inline]

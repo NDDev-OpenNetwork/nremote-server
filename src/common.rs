@@ -1,8 +1,7 @@
 use clap::App;
 use hbb_common::{
-    allow_err,
     anyhow::{Context, Result},
-    log, tokio, ResultType,
+    log, ResultType,
 };
 use ini::Ini;
 use sodiumoxide::crypto::sign;
@@ -279,6 +278,7 @@ pub async fn listen_signal() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hbb_common::tokio;
     use std::net::{Ipv4Addr, Ipv6Addr};
 
     #[test]
