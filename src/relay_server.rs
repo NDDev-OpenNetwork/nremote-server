@@ -653,14 +653,10 @@ impl StreamTrait for tokio_tungstenite::WebSocketStream<TcpStream> {
     async fn recv(&mut self) -> Option<Result<BytesMut, Error>> {
         if let Some(msg) = self.next().await {
             match msg {
-                Ok(msg) => {
-                    match msg {
-                        tungstenite::Message::Binary(bytes) => {
-                            Some(Ok(bytes[..].into())) // to-do: poor performance
-                        }
-                        _ => Some(Ok(BytesMut::new())),
-                    }
-                }
+                Ok(msg) => match msg {
+                    tungstenite::Message::Binary(bytes) => Some(Ok(bytes[..].into())),
+                    _ => Some(Ok(BytesMut::new())),
+                },
                 Err(err) => Some(Err(Error::other(err.to_string()))),
             }
         } else {
@@ -669,9 +665,9 @@ impl StreamTrait for tokio_tungstenite::WebSocketStream<TcpStream> {
     }
 
     async fn send_raw(&mut self, bytes: Bytes) -> ResultType<()> {
-        Ok(self
-            .send(tungstenite::Message::Binary(bytes.to_vec()))
-            .await?) // to-do: poor performance
+        // tungstenite 0.26 carries the payload as Bytes, so this is the
+        // handoff it always should have been rather than a copy.
+        Ok(self.send(tungstenite::Message::Binary(bytes)).await?)
     }
 
     fn is_ws(&self) -> bool {
