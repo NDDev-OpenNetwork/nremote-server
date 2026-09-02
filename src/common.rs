@@ -1,4 +1,4 @@
-use clap::App;
+use clap::{Arg, ArgMatches, Command};
 use hbb_common::{
     anyhow::{Context, Result},
     log, ResultType,
@@ -118,30 +118,67 @@ pub fn set_arg(name: &str, value: &str) {
 }
 
 #[allow(dead_code)]
-pub fn init_args(args: &str, name: &str, about: &str) {
-    let matches = App::new(name)
+/// One command-line option.
+///
+/// The list is data rather than a usage string because clap 2's
+/// `args_from_usage` is gone and its replacement wants builder calls -- and
+/// because the same list is walked twice: once to build the parser, once to
+/// turn what was parsed into environment variables. Two hand-written copies of
+/// that set would be two things to keep in step.
+pub struct ArgSpec {
+    /// The name every consumer reads the value back by, through `get_arg`.
+    pub id: &'static str,
+    pub short: Option<char>,
+    pub long: &'static str,
+    /// Shown in help as the placeholder for the value.
+    pub value_name: &'static str,
+    pub help: &'static str,
+}
+
+/// Parse the command line and fold every source of configuration into the
+/// process environment, lowest precedence first: `.env`, then an explicit
+/// `--config` file, then the flags themselves.
+///
+/// The clap 2 version iterated `matches.args` -- a field of clap's own
+/// internals -- to do the last step. There is no equivalent and there should
+/// not be: walking the declared list says exactly which options exist, and a
+/// new one cannot be added to the parser and forgotten here.
+pub fn init_args(specs: &'static [ArgSpec], name: &'static str, about: &'static str) -> ArgMatches {
+    let mut command = Command::new(name)
         .version(crate::version::VERSION)
         .author("NDDev <danil@nddev.it.com>")
-        .about(about)
-        .args_from_usage(args)
-        .get_matches();
+        .about(about);
+    for spec in specs {
+        let mut arg = Arg::new(spec.id)
+            .long(spec.long)
+            .value_name(spec.value_name)
+            .help(spec.help)
+            .num_args(1);
+        if let Some(short) = spec.short {
+            arg = arg.short(short);
+        }
+        command = command.arg(arg);
+    }
+    let matches = command.get_matches();
+
     if let Ok(v) = Ini::load_from_file(".env") {
         if let Some(section) = v.section(None::<String>) {
             section.iter().for_each(|(k, v)| set_arg(k, v));
         }
     }
-    if let Some(config) = matches.value_of("config") {
+    if let Some(config) = matches.get_one::<String>("config") {
         if let Ok(v) = Ini::load_from_file(config) {
             if let Some(section) = v.section(None::<String>) {
                 section.iter().for_each(|(k, v)| set_arg(k, v));
             }
         }
     }
-    for (k, v) in matches.args {
-        if let Some(v) = v.vals.first() {
-            set_arg(k, &v.to_string_lossy());
+    for spec in specs {
+        if let Some(value) = matches.get_one::<String>(spec.id) {
+            set_arg(spec.id, value);
         }
     }
+    matches
 }
 
 #[allow(dead_code)]

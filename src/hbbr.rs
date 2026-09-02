@@ -1,5 +1,5 @@
-use clap::App;
 mod common;
+use common::ArgSpec;
 mod relay_server;
 use flexi_logger::*;
 use hbb_common::{config::RELAY_PORT, ResultType};
@@ -12,23 +12,34 @@ fn main() -> ResultType<()> {
         .format(opt_format)
         .write_mode(WriteMode::Async)
         .start()?;
-    let args = format!(
-        "-b, --bind=[IP] 'Sets the IP address to bind to (default: all interfaces)'
-        -p, --port=[NUMBER(default={RELAY_PORT})] 'Sets the listening port'
-        -k, --key=[KEY] 'Only allow the client with the same key'
-        ",
-    );
-    let matches = App::new("hbbr")
-        .version(version::VERSION)
-        .author("NDDev <danil@nddev.it.com>")
-        .about("nremote relay server")
-        .args_from_usage(&args)
-        .get_matches();
-    if let Ok(v) = ini::Ini::load_from_file(".env") {
-        if let Some(section) = v.section(None::<String>) {
-            section.iter().for_each(|(k, v)| common::set_arg(k, v));
-        }
-    }
+    static ARGS: &[ArgSpec] = &[
+        ArgSpec {
+            id: "bind",
+            short: Some('b'),
+            long: "bind",
+            value_name: "IP",
+            help: "Sets the IP address to bind to (default: all interfaces)",
+        },
+        ArgSpec {
+            id: "port",
+            short: Some('p'),
+            long: "port",
+            value_name: "NUMBER",
+            help: "Sets the listening port (default 21117)",
+        },
+        ArgSpec {
+            id: "key",
+            short: Some('k'),
+            long: "key",
+            value_name: "KEY",
+            help: "Only allow the client with the same key",
+        },
+    ];
+    // hbbr used to build its own parser and load `.env` itself, which was the
+    // same twenty lines as hbbs with three arguments instead of nine. It does
+    // not accept `--config`, and `init_args` simply finds no such argument.
+    let matches = common::init_args(ARGS, "hbbr", "nremote relay server");
+
     let mut port = RELAY_PORT;
     if let Some(v) = common::get_arg_opt("PORT") {
         let v: i32 = v.parse().unwrap_or_default();
@@ -37,18 +48,21 @@ fn main() -> ResultType<()> {
         }
     }
     let bind = matches
-        .value_of("bind")
-        .map(str::to_owned)
+        .get_one::<String>("bind")
+        .cloned()
         .unwrap_or_else(|| common::get_arg("BIND"));
     let bind_addr = common::parse_bind_address(&bind)?;
     let key = matches
-        .value_of("key")
-        .map(str::to_owned)
+        .get_one::<String>("key")
+        .cloned()
         .unwrap_or_else(|| common::get_arg("KEY"));
-    start_with_bind(
-        bind_addr,
-        matches.value_of("port").unwrap_or(&port.to_string()),
-        &key,
-    )?;
+    // Bound to a local rather than passed inline: the old form borrowed a
+    // temporary `port.to_string()` inside the call, which lived exactly long
+    // enough and read as if it did not.
+    let port = matches
+        .get_one::<String>("port")
+        .cloned()
+        .unwrap_or_else(|| port.to_string());
+    start_with_bind(bind_addr, &port, &key)?;
     Ok(())
 }
