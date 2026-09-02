@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    # A version published minutes ago has been reviewed by nobody. The cooldown
+    # is the cheapest defence against a compromised release being pulled in
+    # before anyone has looked at it, and costs only a few days of latency on
+    # updates that were never urgent.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+
+  # The reusable workflows are pinned to a commit, never a tag, so a moved tag
+  # cannot change what runs. That safety has a cost: nothing refreshes the pin,
+  # so without this the versions here age silently. Refreshing it becomes a
+  # reviewed change instead.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    # Only `default-days`: Dependabot rejects `semver-major-days` for this
+    # ecosystem, which has no semver-major notion in its cooldown model.
+    cooldown:
+      default-days: 7
+
+  # The Dockerfile pins both stages by digest, which is what makes a published
+  # image reproducible and what stops anyone noticing that the base has moved.
+  # This is the half that notices.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(image)"
+    cooldown:
+      default-days: 7
