@@ -73,3 +73,10 @@ jobs:
       issues: write # the stale bot closes threads
       pull-requests: write # the labeler applies labels
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/pr-hygiene.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    with:
+      # The stock configuration rejects any body line over 100 characters, and
+      # Dependabot writes a 144-character compare link into every git-ref bump.
+      # Five dependencies here are pinned by git ref, so the rule would make
+      # their updates unmergeable. `commitlint.config.mjs` keeps the limit and
+      # exempts only lines that no amount of wrapping could shorten.
+      commitlint_config: commitlint.config.mjs
