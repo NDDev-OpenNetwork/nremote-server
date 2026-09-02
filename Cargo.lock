@@ -2556,13 +2556,13 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "ping"
-version = "0.4.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6370a87a1a5bacec2eb80fa24ff3b7f47a1d47404a96611230d3b0d2e0f51141"
+checksum = "7704264c7d31443a8dc10dcb3301457980be49b9e5bffef7a41fd0e7c0f4e823"
 dependencies = [
- "rand 0.8.8",
- "socket2 0.4.10",
- "thiserror 1.0.69",
+ "rand 0.9.5",
+ "socket2 0.6.5",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
