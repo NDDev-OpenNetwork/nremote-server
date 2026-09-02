@@ -58,14 +58,20 @@ logged, and written into NOTICE.
 
 ## Open work, named rather than implied
 
-Two dependency migrations are declared in `osv-scanner.toml` with an expiry
-date rather than done. Both are real work; neither is a version bump.
+One dependency migration is declared in `osv-scanner.toml` with an expiry date
+rather than done. It is real work, not a version bump. The other was done, and
+is kept here because what it did *not* fix is the useful part.
 
-- **clap 2 to clap 4.** clap 2 pins `ansi_term` and `atty`, both unmaintained.
-  `args_from_usage` is gone in clap 3+, and `init_args` iterates
-  `matches.args` to turn every parsed flag into an environment variable, which
-  has no direct equivalent. Porting changes the CLI contract of a running
-  server, so it needs its own change with its own evidence.
+- ~~clap 2 to clap 4~~ — done. The arguments are a typed list now, walked
+  twice: once to build the parser, once to turn what was parsed into
+  environment variables. The old code read `matches.args`, a field of clap's
+  own internals, which is why a new option could be added to the parser and
+  forgotten in the second half.
+
+  It did not remove the `ansi_term` and `atty` advisories, and the reason is
+  worth knowing before anyone tries again: clap 2 is still in the lockfile
+  through `bindgen`, a build dependency of `machine-uid`. Nothing this
+  repository declares reaches it.
 - **sodiumoxide to a maintained ed25519.** This is the signing every client
   authenticates against. A migration needs a compatibility test against an
   existing key pair before it can be believed, not a green build.

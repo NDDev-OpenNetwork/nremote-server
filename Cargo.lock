@@ -1549,7 +1549,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "chrono",
- "clap 2.34.0",
+ "clap 4.6.6",
  "deadpool",
  "dns-lookup",
  "flexi_logger 0.31.10",
