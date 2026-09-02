@@ -60,11 +60,10 @@ RUSTSEC-2021-0145: it goes when `machine-uid` stops needing `bindgen`.
 id = "RUSTSEC-2021-0137"
 ignoreUntil = 2026-12-01
 reason = """
-`sodiumoxide` is unmaintained. It is a direct dependency and it is the ed25519
-signing this server's whole authentication rests on, so this is the one entry
-that is not about an unused path. There is no known vulnerability -- the crate
-is functioning and its libsodium bindings are stable -- and replacing the
-signing primitive under a protocol that deployed clients already speak is a
-migration with a compatibility test behind it, not a dependency bump. Tracked
-in AGENTS.md.
+`sodiumoxide` is unmaintained. Authentication signing has moved to
+`ed25519-dalek` with an RFC 8032 compatibility vector, but the shared protocol
+library still uses sodiumoxide's `box_` and XSalsa20-Poly1305 `secretbox` byte
+formats. There is no known vulnerability. Replacing those remaining primitives
+requires independent wire-compatibility vectors; the exception no longer
+covers Ed25519 signing. Tracked in AGENTS.md.
 """

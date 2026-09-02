@@ -9,6 +9,7 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
+use crate::crypto_sign as sign;
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
 use rand::Rng;
@@ -17,7 +18,6 @@ use serde as de;
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 use sodiumoxide::base64;
-use sodiumoxide::crypto::sign;
 
 mod permanent_password;
 

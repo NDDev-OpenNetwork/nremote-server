@@ -72,12 +72,16 @@ is kept here because what it did *not* fix is the useful part.
   worth knowing before anyone tries again: clap 2 is still in the lockfile
   through `bindgen`, a build dependency of `machine-uid`. Nothing this
   repository declares reaches it.
-- **sodiumoxide to a maintained ed25519.** This is the signing every client
-  authenticates against. A migration needs a compatibility test against an
-  existing key pair before it can be believed, not a green build.
+- ~~sodiumoxide signing to maintained Ed25519~~ — done. `crypto_sign` preserves
+  the deployed 64-byte `seed || public key` and `signature || message` layouts.
+  Its RFC 8032 vector proves exact signature bytes, and malformed stored
+  keypairs are rejected before use. `sodiumoxide` remains for the separate
+  `box_` and `secretbox` protocol operations; replacing those requires its own
+  wire-compatibility vectors and is not part of the signing migration.
 
-Neither has a known vulnerability. Both are held to 2026-12-01, after which the
-scan goes red and the decision has to be made again rather than inherited.
+Neither remaining advisory has a known vulnerability. Both are held to
+2026-12-01, after which the scan goes red and the decision has to be made again
+rather than inherited.
 
 ## Verification
 
