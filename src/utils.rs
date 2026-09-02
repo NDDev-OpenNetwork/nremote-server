@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use dns_lookup::{lookup_addr, lookup_host};
+use hbb_common::crypto_sign as sign;
 use hbb_common::{bail, ResultType};
-use sodiumoxide::crypto::sign;
 use std::{
     env,
     net::{IpAddr, TcpStream},

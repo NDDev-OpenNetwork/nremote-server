@@ -1,6 +1,7 @@
 use crate::common::*;
 use crate::peer::*;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use hbb_common::crypto_sign as sign;
 use hbb_common::{
     allow_err, bail,
     bytes::{Bytes, BytesMut},
@@ -32,7 +33,6 @@ use hbb_common::{
     AddrMangle, ResultType,
 };
 use ipnetwork::Ipv4Network;
-use sodiumoxide::crypto::sign;
 use std::{
     collections::HashMap,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},

@@ -1,6 +1,7 @@
 use async_speed_limit::Limiter;
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use hbb_common::crypto_sign as sign;
 use hbb_common::{
     allow_err, bail,
     bytes::{Bytes, BytesMut},
@@ -20,7 +21,6 @@ use hbb_common::{
     },
     ResultType,
 };
-use sodiumoxide::crypto::sign;
 use std::{
     collections::{HashMap, HashSet},
     io::prelude::*,

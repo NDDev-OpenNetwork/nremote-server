@@ -54,5 +54,10 @@ Modified by NDDev beginning 2026-09-02. Changes so far:
   * Identity strings, command-line help, environment-variable aliases and
     documentation are renamed to nremote.
 
+  * Authentication signing is moved from an unmaintained wrapper to
+    `ed25519-dalek`. Persisted 64-byte keypairs and signed wire messages retain
+    their existing byte layouts, verified against the RFC 8032 Ed25519 test
+    vector; malformed stored keypairs are rejected before use.
+
 The wire protocol is unchanged. This server interoperates with clients built
 from the prior work, which is what makes an incremental migration possible.

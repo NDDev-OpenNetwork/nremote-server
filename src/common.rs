@@ -1,11 +1,11 @@
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use clap::{Arg, ArgMatches, Command};
+use hbb_common::crypto_sign as sign;
 use hbb_common::{
     anyhow::{Context, Result},
     log, ResultType,
 };
 use ini::Ini;
-use sodiumoxide::crypto::sign;
 use std::{
     io::prelude::*,
     io::Read,

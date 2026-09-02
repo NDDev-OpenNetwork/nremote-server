@@ -1,4 +1,5 @@
 pub mod compress;
+pub mod crypto_sign;
 pub mod platform;
 pub mod protos;
 pub use bytes;
