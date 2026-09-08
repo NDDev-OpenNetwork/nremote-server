@@ -1554,7 +1554,7 @@ dependencies = [
  "osascript",
  "protobuf",
  "protobuf-codegen",
- "rand 0.8.8",
+ "rand 0.9.5",
  "regex",
  "rustls-native-certs",
  "rustls-pki-types",
