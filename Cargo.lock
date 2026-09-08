@@ -496,13 +496,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "chacha20"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "chacha20poly1305"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
  "aead",
- "chacha20",
+ "chacha20 0.9.1",
  "cipher",
  "poly1305",
  "zeroize",
@@ -1023,7 +1034,7 @@ dependencies = [
  "rustls",
  "sec1",
  "serde",
- "sha1",
+ "sha1 0.10.7",
  "sha2 0.10.9",
  "thiserror 1.0.69",
  "tokio",
@@ -1453,6 +1464,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi 6.0.0",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1574,7 +1586,7 @@ dependencies = [
  "tokio-tungstenite",
  "tokio-util",
  "toml 0.7.8",
- "tungstenite",
+ "tungstenite 0.26.2",
  "url",
  "uuid",
  "uzers",
@@ -1611,7 +1623,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio-tungstenite",
- "tungstenite",
+ "tungstenite 0.26.2",
  "uuid",
 ]
 
@@ -1627,7 +1639,7 @@ dependencies = [
  "http 0.2.12",
  "httpdate",
  "mime",
- "sha1",
+ "sha1 0.10.7",
 ]
 
 [[package]]
@@ -2886,6 +2898,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
+dependencies = [
+ "chacha20 0.10.2",
+ "getrandom 0.4.3",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "rand_chacha"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2922,6 +2945,12 @@ checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
 dependencies = [
  "getrandom 0.3.4",
 ]
+
+[[package]]
+name = "rand_core"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rcgen"
@@ -3372,6 +3401,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha1"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aacc4cc499359472b4abe1bf11d0b12e688af9a805fa5e3016f9a386dc2d0214"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "digest 0.11.3",
+]
+
+[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3681,7 +3721,7 @@ dependencies = [
  "rand 0.8.8",
  "rsa",
  "serde",
- "sha1",
+ "sha1 0.10.7",
  "sha2 0.10.9",
  "smallvec",
  "sqlx-core",
@@ -4064,9 +4104,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
-version = "0.26.2"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a9daff607c6d2bf6c16fd681ccb7eecc83e4e2cdc1ca067ffaadfca5de7f084"
+checksum = "17a073bfed563fa236697a068031408a93cd9522e08abf9933ead3e73411bd71"
 dependencies = [
  "futures-util",
  "log",
@@ -4077,7 +4117,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
- "tungstenite",
+ "tungstenite 0.30.0",
  "webpki-roots 0.26.11",
 ]
 
@@ -4190,10 +4230,29 @@ dependencies = [
  "rustls",
  "rustls-native-certs",
  "rustls-pki-types",
- "sha1",
+ "sha1 0.10.7",
  "thiserror 2.0.20",
  "utf-8",
  "webpki-roots 0.26.11",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "http 1.5.0",
+ "httparse",
+ "log",
+ "native-tls",
+ "rand 0.10.2",
+ "rustls",
+ "rustls-pki-types",
+ "sha1 0.11.0",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -4729,7 +4788,7 @@ dependencies = [
  "log",
  "rtcp",
  "rtp",
- "sha1",
+ "sha1 0.10.7",
  "subtle",
  "thiserror 1.0.69",
  "tokio",

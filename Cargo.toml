@@ -33,7 +33,7 @@ uuid = { version = "1.0", features = ["v4"] }
 chrono = "0.4"
 headers = "0.3"
 once_cell = "1.8"
-tokio-tungstenite = "0.26"
+tokio-tungstenite = "0.30"
 tungstenite = "0.26"
 flexi_logger = { version = "0.31", features = ["async", "dont_minimize_extra_stacks"] }
 ipnetwork = "0.20"
