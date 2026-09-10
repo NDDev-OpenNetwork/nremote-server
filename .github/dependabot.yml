@@ -14,6 +14,14 @@ updates:
     cooldown:
       default-days: 7
       semver-major-days: 14
+    # tokio-tungstenite re-exports tungstenite's types and this tree also depends
+    # on tungstenite directly. Bumping one alone puts two incompatible copies in
+    # the graph and every shared type stops matching, so they only move together.
+    groups:
+      websocket:
+        patterns:
+          - "tokio-tungstenite"
+          - "tungstenite"
 
   # The reusable workflows are pinned to a commit, never a tag, so a moved tag
   # cannot change what runs. That safety has a cost: nothing refreshes the pin,
