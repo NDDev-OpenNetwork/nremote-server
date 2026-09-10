@@ -1675,7 +1675,7 @@ dependencies = [
  "smithay-client-toolkit",
  "socket2 0.3.19",
  "sodiumoxide",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
