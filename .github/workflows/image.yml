@@ -70,7 +70,7 @@ jobs:
     permissions:
       contents: read
       packages: write # ghcr.io push and the registry layer cache
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docker-build.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docker-build.yml@9231ee7421354867b0fe0e019c4e20dcce5d05e7
     with:
       image: ghcr.io/nddev-opennetwork/nremote-server
       tags: ${{ needs.plan.outputs.tags }}
