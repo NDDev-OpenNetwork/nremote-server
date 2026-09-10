@@ -40,7 +40,7 @@ jobs:
     name: rust
     permissions:
       contents: read
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-ci.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-ci.yml@9231ee7421354867b0fe0e019c4e20dcce5d05e7
     with:
       # Two, not three. Windows is absent because nothing here is built for it:
       # the deliverable is a Linux container, and macOS is kept because it is
