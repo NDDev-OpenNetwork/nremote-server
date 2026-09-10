@@ -43,7 +43,7 @@ libc = "0.2"
 toml = "1.1"
 uuid = { version = "1.16", features = ["v4"] }
 # new flexi_logger failed on nightly rustc 1.75 for x86
-thiserror = "1.0"
+thiserror = "2.0"
 httparse = "1.10"
 base64 = "0.22"
 url = "2.5"
