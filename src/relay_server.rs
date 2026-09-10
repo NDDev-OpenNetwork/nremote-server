@@ -666,7 +666,7 @@ impl StreamTrait for tokio_tungstenite::WebSocketStream<TcpStream> {
     }
 
     async fn send_raw(&mut self, bytes: Bytes) -> ResultType<()> {
-        // tungstenite 0.26 carries the payload as Bytes, so this is the
+        // tungstenite carries the payload as Bytes, so this is the
         // handoff it always should have been rather than a copy.
         Ok(self.send(tungstenite::Message::Binary(bytes)).await?)
     }
