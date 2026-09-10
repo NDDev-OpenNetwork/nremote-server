@@ -268,7 +268,7 @@ mod test {
     #[test]
     fn test() {
         use super::*;
-        use rand::{thread_rng, Rng};
+        use rand::Rng;
         use std::time::Instant;
 
         let version = "00";
@@ -365,9 +365,9 @@ mod test {
         println!("test speed");
         let test_speed = |len: usize, name: &str| {
             let mut data: Vec<u8> = vec![];
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
             for _ in 0..len {
-                data.push(rng.gen_range(0..255));
+                data.push(rng.random_range(0..255));
             }
             let start: Instant = Instant::now();
             let encrypted = encrypt_vec_or_original(&data, version, len);
