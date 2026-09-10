@@ -130,7 +130,8 @@ fn doctor(server_address_unclean: &str) {
         doctor_ip(server_ipaddr, None);
     } else {
         // the passed string is not an ip address
-        let ips: Vec<std::net::IpAddr> = lookup_host(server_address).unwrap();
+        // dns-lookup 3 returns an iterator rather than a Vec.
+        let ips: Vec<std::net::IpAddr> = lookup_host(server_address).unwrap().collect();
         println!("Found {} IP addresses: ", ips.len());
 
         ips.iter().for_each(|ip| println!(" - {ip}"));
