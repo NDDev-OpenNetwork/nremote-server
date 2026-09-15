@@ -58,7 +58,7 @@ tokio-rustls = { version = "0.26", features = [
 tokio-native-tls = "0.3"
 tokio-tungstenite = { version = "0.30", features = ["native-tls", "rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
 tungstenite = { version = "0.30", features = ["native-tls", "rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
-rustls-platform-verifier = "0.6"
+rustls-platform-verifier = "0.7"
 rustls-pki-types = "1.11"
 rustls-native-certs = "0.8"
 webpki-roots = "1.0.4"
