@@ -26,7 +26,7 @@ jobs:
       actions: read # CodeQL reads the workflow definitions it analyses
       contents: read
       security-events: write # CodeQL publishes its findings to code scanning
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
     with:
       languages: '["rust", "actions"]'
       queries: security-and-quality
@@ -40,7 +40,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write # writes the review it produces
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
     with:
       fail_on_severity: moderate
 
@@ -52,13 +52,13 @@ jobs:
       contents: read
       id-token: write # mints the OIDC token its publication is signed with
       security-events: write # Scorecard publishes its findings to code scanning
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-scorecard.yml@9231ee7421354867b0fe0e019c4e20dcce5d05e7
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-scorecard.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
 
   osv:
     name: osv
     permissions:
       contents: read
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/osv-scan.yml@1ab6708b62ec7bd17f2d8a519c6fcc39edb22243
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/osv-scan.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
 
   zizmor:
     name: zizmor
@@ -66,10 +66,10 @@ jobs:
       actions: read # the SARIF upload reads this run to attach its results
       contents: read
       security-events: write # zizmor publishes its findings to code scanning
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-sarif.yml@9231ee7421354867b0fe0e019c4e20dcce5d05e7
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-sarif.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
 
   secret-scan:
     name: secret-scan
     permissions:
       contents: read
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@9231ee7421354867b0fe0e019c4e20dcce5d05e7
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
