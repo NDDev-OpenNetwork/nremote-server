@@ -1,22 +1,13 @@
-# Six advisories are held here, each with the reason it is held and a date the
+# Five advisories are held here, each with the reason it is held and a date the
 # reason expires. None of them is "we looked and it seemed fine": every entry
 # either names the code path that does not exist, or names the work that would
 # close it.
 #
 # Thirteen more were closed rather than held, by refreshing the lockfile and
-# raising sqlx, tungstenite, flexi_logger, deadpool and users. Holding is the
-# exception, not the routine.
-
-[[IgnoredVulns]]
-id = "RUSTSEC-2023-0071"
-ignoreUntil = 2026-12-01
-reason = """
-Marvin attack in `rsa`, no patched release since 2023. Reaches the lockfile
-through `sqlx-mysql`, which `sqlx-macros-core` depends on so the compile-time
-query checker understands every driver. Only the `sqlite` feature is enabled,
-so `cargo tree -i rsa -e normal` prints nothing and the crate is not linked.
-The same reasoning and the same check are in .cargo/audit.toml.
-"""
+# raising sqlx, tungstenite, flexi_logger, deadpool and users. A fourteenth,
+# RUSTSEC-2023-0071 (`rsa` via `sqlx-mysql`), left the lockfile entirely, so its
+# hold was released -- holding an advisory for a crate nothing resolves only
+# trips the unused-ignore gate. Holding is the exception, not the routine.
 
 [[IgnoredVulns]]
 id = "RUSTSEC-2025-0141"
