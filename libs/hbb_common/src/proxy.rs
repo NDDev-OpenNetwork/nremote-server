@@ -521,6 +521,7 @@ impl Proxy {
     }
 
     #[async_recursion]
+    #[allow(clippy::double_must_use)]
     // Nine, because a proxied TLS connection is described by nine things and
     // this is the one place that holds all of them at once.
     #[allow(clippy::too_many_arguments)]
