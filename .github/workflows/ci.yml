@@ -90,7 +90,7 @@ jobs:
       contents: read
       issues: write # the stale bot closes threads
       pull-requests: write # the labeler applies labels
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/pr-hygiene.yml@37a827f921f62353664fc4bcd872f05b65efe71a # 0.1.24
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/pr-hygiene.yml@a7b90bdf1ac12465cbd07072e3360442cfc8eec6 # 0.1.26
     with:
       # The stock configuration rejects any body line over 100 characters, and
       # Dependabot writes a 144-character compare link into every git-ref bump.
