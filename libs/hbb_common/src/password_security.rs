@@ -268,7 +268,7 @@ mod test {
     #[test]
     fn test() {
         use super::*;
-        use rand::Rng;
+        use rand::RngExt;
         use std::time::Instant;
 
         let version = "00";

@@ -12,7 +12,7 @@ use std::{
 use crate::crypto_sign as sign;
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
-use rand::Rng;
+use rand::RngExt;
 use regex::Regex;
 use serde as de;
 use serde_derive::{Deserialize, Serialize};
